@@ -1,8 +1,40 @@
-﻿using System.Linq;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace Maze
 {
+    enum State : byte
+    {
+        NotVisited,
+        Visited
+    }
+    [Flags]
+    enum SurroundingWalls
+    {
+        None = 0,
+        Up = 0x0001,
+        Down = 0x0002,
+        Left = 0x0004,
+        Right = 0x0008
+    }
+
+    struct CellCoords
+    {
+        public int x;
+        public int y;
+        public CellCoords(int x, int y)
+        {
+            this.x = x;
+            this.y = y;
+        }
+
+        public bool Equals(CellCoords cell)
+        {
+            return x == cell.x && y == cell.y;
+        }
+    }
+
     internal class Program
     {
         static int wallsThickness = 2;
@@ -45,31 +77,7 @@ namespace Maze
             {SurroundingWalls.Up | SurroundingWalls.Down | SurroundingWalls.Left | SurroundingWalls.Right, '╬' }
         };
         const char finishChar = '█';
-        enum State : byte
-        {
-            NotVisited,
-            Visited
-        }
-        [Flags]
-        enum SurroundingWalls
-        {
-            None = 0,
-            Up = 0x0001,
-            Down = 0x0002,
-            Left = 0x0004,
-            Right = 0x0008
-        }
-
-        struct CellCoords
-        {
-            public int x;
-            public int y;
-            public CellCoords(int x, int y)
-            {
-                this.x = x;
-                this.y = y;
-            }
-        }
+        const string code = "hesoyam";
 
         static void Main(string[] args)
         {
@@ -110,16 +118,28 @@ namespace Maze
 
                 Console.SetCursorPosition(wallsThickness, wallsThickness);
                 bool mazeExitRequested = false;
+                string inputCode = "";
 
                 //User-input request cycle
                 while (!mazeExitRequested)
                 {
                     var (Left, Top) = Console.GetCursorPosition();
-                    if (Left > columns - 1)
-                    {
-                        break;
-                    }
                     var key = Console.ReadKey(true);
+                    if (code.Contains(inputCode + key.KeyChar))
+                    {
+                        inputCode += key.KeyChar;
+                        if (inputCode.Length == code.Length)
+                        {
+                            DisplayWithPath(new PathFinder(maze, new CellCoords(wallsThickness, wallsThickness), finishCell, generatorStep));
+                            Console.SetCursorPosition(Left, Top);
+                            inputCode = "";
+                        }
+                    }
+                    else
+                    {
+                        inputCode = "";
+                    }
+
                     bool WayBlocked = false;
                     switch (key.Key)
                     {
@@ -242,6 +262,33 @@ namespace Maze
             Console.Clear();
             Console.SetCursorPosition(0, 0);
         }
+
+        static public List<CellCoords> GetNeighbours(CellCoords cell)
+        {
+            var list = new List<CellCoords>();
+
+            if (cell.y >= wallsThickness + generatorStep)
+            {
+                list.Add(new CellCoords(cell.x, cell.y - generatorStep));
+            }
+
+            if (cell.x <= columns - wallsThickness - generatorStep)
+            {
+                list.Add(new CellCoords(cell.x + generatorStep, cell.y));
+            }
+
+            if (cell.y <= rows - wallsThickness - generatorStep)
+            {
+                list.Add(new CellCoords(cell.x, cell.y + generatorStep));
+            }
+
+            if (cell.x >= wallsThickness + generatorStep)
+            {
+                list.Add(new CellCoords(cell.x - generatorStep, cell.y));
+            }
+            return list;
+        }
+
         static void GenerateMaze()
         {
             int generationStartX = wallsThickness;
@@ -263,37 +310,13 @@ namespace Maze
                     randomTuple.cells.Remove(randomDestination);
                 }
                 else
-                { 
+                {
                     routeTuples.Remove(randomTuple);
                 }
             }
             finishCell = GenerateFinish();
         }
 
-        static List<CellCoords> GetNeighbours(CellCoords cell)
-        {
-            var list = new List<CellCoords>();
-            if (cell.x >= wallsThickness + generatorStep)
-            {
-                list.Add(new CellCoords(cell.x - generatorStep, cell.y));
-            }
-
-            if (cell.x <= columns - wallsThickness - generatorStep)
-            {
-                list.Add(new CellCoords(cell.x + generatorStep, cell.y));
-            }
-
-            if (cell.y >= wallsThickness + generatorStep)
-            {
-                list.Add(new CellCoords(cell.x, cell.y - generatorStep));
-            }
-
-            if (cell.y <= rows - wallsThickness - generatorStep)
-            {
-                list.Add(new CellCoords(cell.x, cell.y + generatorStep));
-            }
-            return list;
-        }
 
         static void MakePath(CellCoords first, CellCoords second)
         {
@@ -380,25 +403,56 @@ namespace Maze
                 Console.WriteLine();
             }
         }
-        static void DisplayStep()
+        static void DisplayWithPath(PathFinder pathFinder)
         {
             Console.Clear();
+            var pathColor = ConsoleColor.DarkGreen;
+            var pathChar = finishChar;
             for (int i = 0; i < rows; i++)
             {
                 for (int j = 0; j < columns; j++)
                 {
                     SurroundingWalls walls = SurroundingWalls.None;
-                    if (maze[i, j] != State.Visited)
+                    if (i == finishCell.y && j > finishCell.x)
                     {
-                        if (i > 0 && maze[i - 1, j] == State.NotVisited) walls |= SurroundingWalls.Up;
-
-                        if (i < rows - 1 && maze[i + 1, j] == State.NotVisited) walls |= SurroundingWalls.Down;
-
-                        if (j > 0 && maze[i, j - 1] == State.NotVisited) walls |= SurroundingWalls.Left;
-
-                        if (j < columns - 1 && maze[i, j + 1] == State.NotVisited) walls |= SurroundingWalls.Right;
+                        var consoleColor = Console.ForegroundColor;
+                        Console.ForegroundColor = finishColor;
+                        Console.Write(finishChar);
+                        Console.ForegroundColor = consoleColor;
                     }
-                    Console.Write(chars[walls]);
+                    else if (pathFinder.Way.Contains(new CellCoords(j, i)))
+                    {
+                        var consoleColor = Console.ForegroundColor;
+                        Console.ForegroundColor = pathColor;
+                        Console.Write(pathChar);
+                        Console.ForegroundColor = consoleColor;
+                    }
+                    else
+                    {
+                        if (maze[i, j] != State.Visited)
+                        {
+                            if (i > 0 && maze[i - 1, j] == State.NotVisited)
+                            {
+                                walls |= SurroundingWalls.Up;
+                            }
+
+                            if (i < rows - 1 && maze[i + 1, j] == State.NotVisited)
+                            {
+                                walls |= SurroundingWalls.Down;
+                            }
+
+                            if (j > 0 && maze[i, j - 1] == State.NotVisited)
+                            {
+                                walls |= SurroundingWalls.Left;
+                            }
+
+                            if (j < columns - 1 && maze[i, j + 1] == State.NotVisited)
+                            {
+                                walls |= SurroundingWalls.Right;
+                            }
+                        }
+                        Console.Write(chars[walls]);
+                    }
                 }
                 Console.WriteLine();
             }
