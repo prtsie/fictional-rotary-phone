@@ -9,7 +9,7 @@ namespace Maze
     internal class PathFinder
     {
         public Stack<CellCoords> Way { get; } = new Stack<CellCoords>();
-        private State[,] maze;
+        private readonly State[,] maze;
         private CellCoords finish;
 
         public PathFinder(State[,] maze, CellCoords start, CellCoords finish)

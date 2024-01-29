@@ -19,17 +19,12 @@ namespace Maze
         Right = 0x0008
     }
 
-    struct CellCoords
+    struct CellCoords(int x, int y)
     {
-        public int x;
-        public int y;
-        public CellCoords(int x, int y)
-        {
-            this.x = x;
-            this.y = y;
-        }
+        public int x = x;
+        public int y = y;
 
-        public bool Equals(CellCoords cell)
+        public readonly bool Equals(CellCoords cell)
         {
             return x == cell.x && y == cell.y;
         }
@@ -48,16 +43,16 @@ namespace Maze
         static int columns;
 
         const int minSize = 2;
-        static int minWallThickness = 1;
+        const int minWallThickness = 1;
 
         const ConsoleColor backgroundColor = ConsoleColor.Gray;
         const ConsoleColor foregroundColor = ConsoleColor.Red;
         const ConsoleColor finishColor = ConsoleColor.Green;
 
         static CellCoords finishCell;
-        static State[,] maze;
-        static Random random = new();
-        static Dictionary<SurroundingWalls, char> chars = new Dictionary<SurroundingWalls, char>()
+        static State[,] maze = null!;
+        static readonly Random random = new();
+        static readonly Dictionary<SurroundingWalls, char> chars = new()
         {
             {SurroundingWalls.None, ' ' },
             {SurroundingWalls.Up,  '║'},
@@ -79,7 +74,7 @@ namespace Maze
         const char finishChar = '█';
         const string code = "hesoyam";
 
-        static void Main(string[] args)
+        static void Main()
         {
             int startConsoleWidth = Console.WindowWidth;
             int startConsoleHeight = Console.WindowHeight;
@@ -87,7 +82,9 @@ namespace Maze
             var startForegroundColor = Console.ForegroundColor;
             Console.BackgroundColor = backgroundColor;
             Console.ForegroundColor = foregroundColor;
+#pragma warning disable CA1416 // Проверка совместимости платформы
             Console.CursorSize = 100;
+#pragma warning restore CA1416 // Проверка совместимости платформы
 
             //Maze generation cycle
             bool escapePressed = false;
@@ -294,7 +291,7 @@ namespace Maze
             int generationStartX = wallsThickness;
             int generationStartY = wallsThickness;
 
-            CellCoords generationStartCell = new CellCoords(generationStartX, generationStartY);
+            var generationStartCell = new CellCoords(generationStartX, generationStartY);
             maze[generationStartY, generationStartX] = State.Visited;
             //List with visited cells and surrounding unvisited cells to visit
             List<(List<CellCoords> cells, CellCoords from)> routeTuples = [(GetNeighbours(generationStartCell), generationStartCell)];
@@ -361,7 +358,7 @@ namespace Maze
 
         static CellCoords GenerateFinish()
         {
-            CellCoords cell = new CellCoords();
+            var cell = new CellCoords();
             int y = random.Next(wallsThickness - 1, rows - wallsThickness);
             y -= (y - wallsThickness) % generatorStep;
             cell.x = columns - 1 - wallsThickness;
