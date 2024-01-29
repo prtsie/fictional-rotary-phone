@@ -10,16 +10,12 @@ namespace Maze
     {
         public Stack<CellCoords> Way { get; } = new Stack<CellCoords>();
         private State[,] maze;
-        private CellCoords start;
         private CellCoords finish;
-        private int playerStep;
 
-        public PathFinder(State[,] maze, CellCoords start, CellCoords finish, int playerStep)
+        public PathFinder(State[,] maze, CellCoords start, CellCoords finish)
         {
             this.maze = maze;
-            this.start = start;
             this.finish = finish;
-            this.playerStep = playerStep;
             FindPath(start, new CellCoords());
         }
 
@@ -31,7 +27,7 @@ namespace Maze
                 return true;
             }
             var ways = GetWays(currentCell).Where(cell => !cell.Equals(previousCell)).ToList();
-            while (ways.Any())
+            while (ways.Count != 0)
             {
                 var way = ways.First();
                 if (FindPath(way, currentCell))

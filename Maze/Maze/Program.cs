@@ -130,7 +130,7 @@ namespace Maze
                         inputCode += key.KeyChar;
                         if (inputCode.Length == code.Length)
                         {
-                            DisplayWithPath(new PathFinder(maze, new CellCoords(wallsThickness, wallsThickness), finishCell, generatorStep));
+                            DisplayWithPath(new PathFinder(maze, new CellCoords(wallsThickness, wallsThickness), finishCell));
                             Console.SetCursorPosition(Left, Top);
                             inputCode = "";
                         }
