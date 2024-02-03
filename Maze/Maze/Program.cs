@@ -134,7 +134,7 @@ namespace Maze
                     }
                     else
                     {
-                        inputCode = "";
+                        inputCode = "" + (code[0] == key.KeyChar ? key.KeyChar : "");
                     }
 
                     bool WayBlocked = false;
